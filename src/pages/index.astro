@@ -61,14 +61,11 @@ const startFlipped = result !== null;
 		/>
 		<style>
 			:root {
-				--cream: #f1e6cf;
-				--paper: #faf3e0;
-				--ink: #2a2522;
-				--muted: #7a6f60;
-				--rule: rgba(42, 37, 34, 0.25);
-				--terracotta: #c66b3d;
-				--postage: #b54a37;
-				--ocean: #2d4f6e;
+				--paper: #ffffff;
+				--ink: #000000;
+				--muted: #6b6b6b;
+				--rule: rgba(0, 0, 0, 0.28);
+				--soft: #f3f3f3;
 			}
 
 			* {
@@ -86,15 +83,15 @@ const startFlipped = result !== null;
 				background:
 					radial-gradient(
 						ellipse at top right,
-						rgba(198, 107, 61, 0.18),
+						rgba(0, 0, 0, 0.04),
 						transparent 55%
 					),
 					radial-gradient(
 						ellipse at bottom left,
-						rgba(45, 79, 110, 0.14),
+						rgba(0, 0, 0, 0.03),
 						transparent 55%
 					),
-					var(--cream);
+					var(--paper);
 				color: var(--ink);
 				font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
 				display: grid;
@@ -134,8 +131,8 @@ const startFlipped = result !== null;
 				-webkit-backface-visibility: hidden;
 				border-radius: 4px;
 				box-shadow:
-					0 30px 60px -20px rgba(20, 15, 10, 0.35),
-					0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+					0 30px 60px -20px rgba(0, 0, 0, 0.4),
+					0 0 0 1px rgba(0, 0, 0, 0.08) inset;
 				overflow: hidden;
 			}
 
@@ -153,11 +150,11 @@ const startFlipped = result !== null;
 					linear-gradient(
 						180deg,
 						rgba(0, 0, 0, 0) 60%,
-						rgba(0, 0, 0, 0.18) 100%
+						rgba(0, 0, 0, 0.2) 100%
 					),
 					url("/postcard.jpg") center / cover no-repeat,
 					url("/postcard-fallback.svg") center / cover no-repeat,
-					linear-gradient(135deg, #b8a584 0%, #8a9aac 60%, #5b7a8f 100%);
+					linear-gradient(180deg, #d8d8d8 0%, #777 55%, #2a2a2a 100%);
 			}
 
 			.front-hint {
@@ -168,12 +165,12 @@ const startFlipped = result !== null;
 				font-family: "Caveat", "Cormorant Garamond", cursive;
 				font-size: 1.25rem;
 				color: var(--ink);
-				background: rgba(250, 243, 224, 0.92);
+				background: rgba(255, 255, 255, 0.94);
 				padding: 0.25rem 0.875rem;
 				border-radius: 999px;
 				letter-spacing: 0.02em;
 				pointer-events: none;
-				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 			}
 
 			.face--back {
@@ -181,8 +178,8 @@ const startFlipped = result !== null;
 				background-image: repeating-linear-gradient(
 					transparent,
 					transparent 26px,
-					rgba(120, 95, 60, 0.18) 26px,
-					rgba(120, 95, 60, 0.18) 27px
+					rgba(0, 0, 0, 0.1) 26px,
+					rgba(0, 0, 0, 0.1) 27px
 				);
 				transform: rotateY(180deg);
 				padding: 1.75rem 1.5rem 1.5rem;
@@ -211,7 +208,7 @@ const startFlipped = result !== null;
 				height: 6rem;
 				padding: 0.375rem;
 				background: var(--paper);
-				border: 1px dashed rgba(0, 0, 0, 0.25);
+				border: 1px dashed rgba(0, 0, 0, 0.4);
 				transform: rotate(4deg);
 				display: grid;
 				place-items: center;
@@ -221,8 +218,8 @@ const startFlipped = result !== null;
 			.stamp-inner {
 				width: 100%;
 				height: 100%;
-				border: 1px solid var(--postage);
-				color: var(--postage);
+				border: 1px solid var(--ink);
+				color: var(--ink);
 				display: grid;
 				place-items: center;
 				font-family: "Cormorant Garamond", serif;
@@ -306,7 +303,8 @@ const startFlipped = result !== null;
 			input:focus,
 			textarea:focus {
 				outline: none;
-				border-bottom-color: var(--terracotta);
+				border-bottom-color: var(--ink);
+				border-bottom-width: 1.5px;
 			}
 
 			textarea {
@@ -337,7 +335,7 @@ const startFlipped = result !== null;
 			}
 
 			.radios input[type="radio"] {
-				accent-color: var(--terracotta);
+				accent-color: var(--ink);
 			}
 
 			button[type="submit"] {
@@ -349,19 +347,22 @@ const startFlipped = result !== null;
 				padding: 0.5rem 1.25rem;
 				background: var(--ink);
 				color: var(--paper);
-				border: 0;
+				border: 1px solid var(--ink);
 				border-radius: 2px;
 				cursor: pointer;
 				align-self: start;
-				transition: background 0.2s ease;
+				transition:
+					background 0.2s ease,
+					color 0.2s ease;
 			}
 
 			button[type="submit"]:hover {
-				background: var(--terracotta);
+				background: var(--paper);
+				color: var(--ink);
 			}
 
 			.error {
-				color: var(--postage);
+				color: var(--ink);
 				font-size: 0.6875rem;
 				margin: 0.125rem 0 0;
 				letter-spacing: 0.02em;
@@ -373,10 +374,11 @@ const startFlipped = result !== null;
 				font-family: "Cormorant Garamond", serif;
 				font-style: italic;
 				font-size: 0.9rem;
-				color: var(--postage);
-				border-left: 2px solid var(--postage);
-				padding: 0.125rem 0 0.125rem 0.5rem;
+				color: var(--ink);
+				border-left: 3px solid var(--ink);
+				padding: 0.125rem 0 0.125rem 0.625rem;
 				margin: 0;
+				font-weight: 500;
 			}
 
 			.success {
@@ -412,7 +414,7 @@ const startFlipped = result !== null;
 				pointer-events: none;
 				background: var(--paper);
 				padding: 0.5rem 0.5rem 1.75rem;
-				box-shadow: 0 18px 36px -10px rgba(20, 15, 10, 0.35);
+				box-shadow: 0 18px 36px -10px rgba(0, 0, 0, 0.35);
 				display: flex;
 				flex-direction: column;
 			}
@@ -420,10 +422,11 @@ const startFlipped = result !== null;
 			.moodboard::before {
 				content: "";
 				flex: 1;
-				background-color: #d4c4a4;
+				background-color: var(--soft);
 				background-position: center;
 				background-size: cover;
 				background-repeat: no-repeat;
+				filter: grayscale(1);
 			}
 
 			.moodboard::after {
@@ -434,8 +437,8 @@ const startFlipped = result !== null;
 				transform: translateX(-50%) rotate(-2deg);
 				width: 2.25rem;
 				height: 0.625rem;
-				background: rgba(240, 230, 200, 0.65);
-				border: 1px solid rgba(120, 95, 60, 0.25);
+				background: rgba(255, 255, 255, 0.75);
+				border: 1px solid rgba(0, 0, 0, 0.18);
 			}
 
 			.mb-1 {
