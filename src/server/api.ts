@@ -6,7 +6,12 @@ type Bindings = Env;
 
 export const rsvpSchema = z.object({
 	name: z.string().trim().min(1, "Name is required").max(120),
-	email: z.string().trim().email("Enter a valid email").max(200),
+	email: z
+		.string()
+		.trim()
+		.toLowerCase()
+		.email("Enter a valid email")
+		.max(200),
 	phone: z.string().trim().min(5, "Enter a valid phone number").max(40),
 	attending: z.enum(["yes", "no"]).transform((v) => (v === "yes" ? 1 : 0)),
 	plus_one: z.coerce.number().int().min(0).max(5).default(0),
@@ -16,13 +21,14 @@ export const rsvpSchema = z.object({
 		.max(2000)
 		.optional()
 		.transform((v) => (v && v.length > 0 ? v : undefined)),
-	password: z.string().min(1, "Password is required"),
+	password: z.string().min(1, "Password is required").max(200),
 });
 
 export type RsvpResult =
 	| { ok: true }
 	| { ok: false; error: "validation"; fields: Record<string, string> }
 	| { ok: false; error: "password" }
+	| { ok: false; error: "duplicate" }
 	| { ok: false; error: "server" };
 
 function constantTimeEqual(a: string, b: string): boolean {
@@ -74,7 +80,14 @@ app.post(
 					input.message ?? null,
 				)
 				.run();
-		} catch {
+		} catch (err) {
+			if (
+				err instanceof Error &&
+				err.message.includes("UNIQUE constraint failed")
+			) {
+				return c.json<RsvpResult>({ ok: false, error: "duplicate" }, 409);
+			}
+			console.error("rsvp insert failed", err);
 			return c.json<RsvpResult>({ ok: false, error: "server" }, 500);
 		}
 		return c.json<RsvpResult>({ ok: true }, 200);

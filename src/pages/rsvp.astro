@@ -35,6 +35,7 @@ const fieldErrors = result && !result.ok && result.error === "validation"
 	? result.fields
 	: {};
 const passwordError = result && !result.ok && result.error === "password";
+const duplicateError = result && !result.ok && result.error === "duplicate";
 const serverError = result && !result.ok && result.error === "server";
 const success = result?.ok === true;
 ---
@@ -153,6 +154,9 @@ const success = result?.ok === true;
 				<>
 					{passwordError && (
 						<p class="banner">Wrong password. Try again.</p>
+					)}
+					{duplicateError && (
+						<p class="banner">That email has already RSVP'd.</p>
 					)}
 					{serverError && (
 						<p class="banner">Something went wrong. Please try again.</p>
