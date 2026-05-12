@@ -11,13 +11,14 @@ All commands are run from the repo root. Node `>=22` is required.
 | `npm run dev` | Astro dev server at `localhost:4321` (Cloudflare `platformProxy` enabled, so `Astro.locals.runtime` works locally). |
 | `npm run build` | Build static output to `./dist/` (includes the Cloudflare `_worker.js` entry). |
 | `npm run preview` | `astro build` + `wrangler dev` — runs the built Worker locally. Use this instead of `npm run dev` when verifying Cloudflare-runtime behavior. |
+| `npm run lint` / `npm run lint:fix` | Run ESLint over `.ts`/`.js`/`.astro`. Config is `eslint.config.mjs` (flat config). Run before pushing. |
 | `npm run check` | Full preflight: `astro build && tsc && wrangler deploy --dry-run`. Run before pushing. |
 | `npm run deploy` | `wrangler deploy` (assumes `dist/` is already built — use `npm run build && npm run deploy`). |
 | `npm run cf-typegen` | Regenerate `worker-configuration.d.ts` from `wrangler.json`. Run after editing bindings/env in `wrangler.json`. |
 | `npm run astro -- <cmd>` | Pass-through to the Astro CLI (e.g. `astro add`, `astro check`). |
 | `npx wrangler tail` | Stream live Worker logs from the deployed environment. |
 
-There is no test runner and no linter configured — `tsc` (via `npm run check`) is the only static verification.
+There is no test runner. Static verification is `npm run lint` (ESLint flat config: `typescript-eslint` + `eslint-plugin-astro` recommended, plus AI-slop guards — `no-unused-vars`, `no-console`, `no-useless-catch`, `no-empty`, `no-explicit-any`, `no-non-null-assertion`, `consistent-type-imports`, `eqeqeq`, `no-var`, `prefer-const`) and `npm run check` (full typecheck + dry-run deploy). Prefix intentionally unused identifiers (catch params, stub args) with `_` to opt out of `no-unused-vars`.
 
 ## Architecture
 
