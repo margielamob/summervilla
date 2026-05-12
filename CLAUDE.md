@@ -22,7 +22,7 @@ There is no test runner. Static verification is `npm run lint` (ESLint flat conf
 
 ## Architecture
 
-Astro 5 deployed to **Cloudflare Workers** via `@astrojs/cloudflare`. The site is currently a single blank page (`src/pages/index.astro`) — the previous blog scaffolding (content collection, layouts, components, RSS, sitemap, MDX) has been removed. Build output is a static asset set plus a Worker entry (`dist/_worker.js/index.js`) that serves assets via the `ASSETS` binding declared in `wrangler.json`.
+Astro 5 deployed to **Cloudflare Workers** via `@astrojs/cloudflare`. Two pages: a blank `index.astro` and a password-gated RSVP form at `/rsvp` backed by a D1 database. Build output is a static asset set plus a Worker entry (`dist/_worker.js/index.js`) that serves assets via the `ASSETS` binding declared in `wrangler.json`.
 
 ### Build → deploy pipeline
 
@@ -32,11 +32,17 @@ Astro 5 deployed to **Cloudflare Workers** via `@astrojs/cloudflare`. The site i
 
 ### Routing
 
-File-based via `src/pages/`. `index.astro` is the only route. Add a page by dropping a new `.astro` (or `.md` once a content pipeline is reintroduced) under `src/pages/`.
+File-based via `src/pages/`. Add a page by dropping a new `.astro` (or `.md` once a content pipeline is reintroduced) under `src/pages/`. Pages with `export const prerender = false` are SSR-rendered by the Worker and can read `Astro.request` for non-GET methods.
 
-### Available runtime libraries
+### RSVP flow (`/rsvp`)
 
-`hono` is installed as a runtime dependency, intended for HTTP routing/handlers when the site grows beyond static pages. It is not yet wired in anywhere.
+A single SSR page that handles its own POST inline — no separate `/api/*` route, no redirects, no client JS.
+
+- `src/pages/rsvp.astro` (`prerender = false`) renders the form on GET. On POST, the page builds a fresh `Request` from the form body and hands it to the Hono app via `app.fetch(req, Astro.locals.runtime.env, Astro.locals.runtime.ctx)`, then renders the success or error state inline based on the JSON response.
+- `src/server/api.ts` exports the Hono app. The `POST /rsvp` route chains `zValidator('form', rsvpSchema)` → inline password-guard middleware (constant-time compare against `c.env.RSVP_PASSWORD`) → D1 insert. The shared schema/result types are exported so the page stays type-aligned with the server.
+- `migrations/0001_create_rsvps_table.sql` defines the `rsvps` table. Apply with `npx wrangler d1 migrations apply summervilla-rsvp --local` for local dev; `--remote` for prod.
+- `RSVP_PASSWORD` lives in `.dev.vars` locally (gitignored; see `.dev.vars.example`) and `npx wrangler secret put RSVP_PASSWORD` in prod. The type is augmented onto `Cloudflare.Env` in `src/env.d.ts`.
+- The `DB` binding in `wrangler.json` is created out-of-band: `npx wrangler d1 create summervilla-rsvp`, then paste the UUID into `database_id` and rerun `npm run cf-typegen`.
 
 ### TypeScript
 

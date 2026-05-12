@@ -13,9 +13,11 @@
 	},
 	"dependencies": {
 		"@astrojs/cloudflare": "12.6.12",
+		"@hono/zod-validator": "^0.8.0",
 		"astro": "5.16.9",
 		"hono": "^4.12.18",
-		"typescript": "5.9.3"
+		"typescript": "5.9.3",
+		"zod": "^3.25.76"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

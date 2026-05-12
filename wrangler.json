@@ -7,6 +7,13 @@
 		"directory": "./dist",
 		"binding": "ASSETS"
 	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "summervilla-rsvp",
+			"database_id": "REPLACE_WITH_UUID_FROM_WRANGLER_D1_CREATE"
+		}
+	],
 	"observability": {
 		"enabled": true
 	},
