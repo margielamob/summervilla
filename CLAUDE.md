@@ -22,7 +22,7 @@ There is no test runner. Static verification is `npm run lint` (ESLint flat conf
 
 ## Architecture
 
-Astro 5 deployed to **Cloudflare Workers** via `@astrojs/cloudflare`. Two pages: a blank `index.astro` and a password-gated RSVP form at `/rsvp` backed by a D1 database. Build output is a static asset set plus a Worker entry (`dist/_worker.js/index.js`) that serves assets via the `ASSETS` binding declared in `wrangler.json`.
+Astro 5 deployed to **Cloudflare Workers** via `@astrojs/cloudflare`. One page: a postcard-themed, password-gated RSVP form at `/` (`src/pages/index.astro`), SSR-rendered, backed by a D1 database. Build output is a static asset set plus a Worker entry (`dist/_worker.js/index.js`) that serves assets via the `ASSETS` binding declared in `wrangler.json`.
 
 ### Build → deploy pipeline
 
@@ -34,15 +34,24 @@ Astro 5 deployed to **Cloudflare Workers** via `@astrojs/cloudflare`. Two pages:
 
 File-based via `src/pages/`. Add a page by dropping a new `.astro` (or `.md` once a content pipeline is reintroduced) under `src/pages/`. Pages with `export const prerender = false` are SSR-rendered by the Worker and can read `Astro.request` for non-GET methods.
 
-### RSVP flow (`/rsvp`)
+### RSVP flow (`/`)
 
-A single SSR page that handles its own POST inline — no separate `/api/*` route, no redirects, no client JS.
+A single SSR page that handles its own POST inline — no separate `/api/*` route, no redirects, minimal client JS (only the postcard flip toggle).
 
-- `src/pages/rsvp.astro` (`prerender = false`) renders the form on GET. On POST, the page builds a fresh `Request` from the form body and hands it to the Hono app via `app.fetch(req, Astro.locals.runtime.env, Astro.locals.runtime.ctx)`, then renders the success or error state inline based on the JSON response.
+- `src/pages/index.astro` (`prerender = false`) renders a 3D-flippable postcard. The front shows a postcard illustration; tapping flips to a reply-postcard back where the form lives. On POST, the page builds a fresh `Request` from the form body and hands it to the Hono app via `app.fetch(req, Astro.locals.runtime.env, Astro.locals.runtime.ctx)`, then renders the success or error state inline. If a result exists, the card starts already flipped so the user sees feedback without re-tapping.
 - `src/server/api.ts` exports the Hono app. The `POST /rsvp` route chains `zValidator('form', rsvpSchema)` → inline password-guard middleware (constant-time compare against `c.env.RSVP_PASSWORD`) → D1 insert. The shared schema/result types are exported so the page stays type-aligned with the server.
-- `migrations/0001_create_rsvps_table.sql` defines the `rsvps` table. Apply with `npx wrangler d1 migrations apply summervilla-rsvp --local` for local dev; `--remote` for prod.
+- `migrations/0001_create_rsvps_table.sql` defines the `rsvps` table; `0002_unique_email_on_rsvps.sql` adds the unique index on email. Apply with `npx wrangler d1 migrations apply summervilla-rsvp --local` for local dev; `--remote` for prod.
 - `RSVP_PASSWORD` lives in `.dev.vars` locally (gitignored; see `.dev.vars.example`) and `npx wrangler secret put RSVP_PASSWORD` in prod. The type is augmented onto `Cloudflare.Env` in `src/env.d.ts`.
 - The `DB` binding in `wrangler.json` is created out-of-band: `npx wrangler d1 create summervilla-rsvp`, then paste the UUID into `database_id` and rerun `npm run cf-typegen`.
+
+### Postcard assets
+
+The page references four optional photo assets in `public/` — when present they replace the SVG fallback / empty polaroid frames:
+
+- `public/postcard.jpg` — front face of the postcard (CSS background, falls back to `public/postcard-fallback.svg` if missing).
+- `public/moodboard-1.jpg`, `moodboard-2.jpg`, `moodboard-3.jpg` — three floating polaroids around the card (hidden below 960px). Missing files render as cream-toned empty polaroids, which is intentional design, not a broken state.
+
+To swap in real photos, drop the JPGs into `public/` with those exact filenames and commit. No code change needed.
 
 ### TypeScript
 
