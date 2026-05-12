@@ -11,7 +11,7 @@
 		{
 			"binding": "DB",
 			"database_name": "summervilla-rsvp",
-			"database_id": "REPLACE_WITH_UUID_FROM_WRANGLER_D1_CREATE"
+			"database_id": "d5503e2f-032f-4ba5-804b-eefb480e6245"
 		}
 	],
 	"observability": {
