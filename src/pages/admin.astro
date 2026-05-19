@@ -1,0 +1,579 @@
+---
+export const prerender = false;
+
+type RsvpRow = {
+	id: number;
+	name: string;
+	email: string;
+	phone: string;
+	attending: number;
+	plus_one: number;
+	message: string | null;
+	created_at: number;
+};
+
+const ADMIN_COOKIE = "summervilla_admin";
+const SESSION_TTL_SECONDS = 60 * 60 * 8;
+const encoder = new TextEncoder();
+
+function constantTimeEqual(a: string, b: string): boolean {
+	if (a.length !== b.length) return false;
+	let mismatch = 0;
+	for (let i = 0; i < a.length; i++) {
+		mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+	}
+	return mismatch === 0;
+}
+
+function toHex(buffer: ArrayBuffer): string {
+	return [...new Uint8Array(buffer)]
+		.map((byte) => byte.toString(16).padStart(2, "0"))
+		.join("");
+}
+
+async function signSession(secret: string, value: string): Promise<string> {
+	const key = await crypto.subtle.importKey(
+		"raw",
+		encoder.encode(secret),
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"],
+	);
+	const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(value));
+	return toHex(signature);
+}
+
+async function createSessionToken(secret: string): Promise<string> {
+	const expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
+	const payload = String(expiresAt);
+	const signature = await signSession(secret, payload);
+	return `${payload}.${signature}`;
+}
+
+async function verifySessionToken(
+	token: string | undefined,
+	secret: string | undefined,
+): Promise<boolean> {
+	if (!token || !secret) return false;
+
+	const [expiresAt, signature] = token.split(".");
+	const expiry = Number(expiresAt);
+	if (!expiresAt || !signature || !Number.isSafeInteger(expiry)) return false;
+	if (expiry <= Math.floor(Date.now() / 1000)) return false;
+
+	const expected = await signSession(secret, expiresAt);
+	return constantTimeEqual(signature, expected);
+}
+
+function formatCreatedAt(seconds: number): string {
+	return new Intl.DateTimeFormat("en-US", {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+	}).format(new Date(seconds * 1000));
+}
+
+const env = Astro.locals.runtime.env;
+const adminPassword = env.ADMIN_PASSWORD;
+let authed = await verifySessionToken(
+	Astro.cookies.get(ADMIN_COOKIE)?.value,
+	adminPassword,
+);
+let message = "";
+let error = "";
+
+if (Astro.request.method === "POST") {
+	const formData = await Astro.request.formData();
+	const action = String(formData.get("action") ?? "");
+
+	if (!adminPassword) {
+		error = "ADMIN_PASSWORD is not configured.";
+	} else if (action === "login") {
+		const password = String(formData.get("password") ?? "");
+
+		if (constantTimeEqual(password, adminPassword)) {
+			const token = await createSessionToken(adminPassword);
+			Astro.cookies.set(ADMIN_COOKIE, token, {
+				path: "/admin",
+				httpOnly: true,
+				secure: Astro.url.protocol === "https:",
+				sameSite: "strict",
+				maxAge: SESSION_TTL_SECONDS,
+			});
+			authed = true;
+			message = "Signed in.";
+		} else {
+			error = "Wrong admin password.";
+		}
+	} else if (action === "logout") {
+		Astro.cookies.delete(ADMIN_COOKIE, { path: "/admin" });
+		authed = false;
+		message = "Signed out.";
+	} else if (action === "delete") {
+		if (!authed) {
+			error = "Session expired. Sign in again.";
+		} else {
+			const id = Number(formData.get("id"));
+
+			if (!Number.isSafeInteger(id) || id <= 0) {
+				error = "Invalid RSVP id.";
+			} else {
+				await env.DB.prepare("DELETE FROM rsvps WHERE id = ?").bind(id).run();
+				message = `Deleted RSVP #${id}.`;
+			}
+		}
+	}
+}
+
+let rsvps: RsvpRow[] = [];
+if (authed) {
+	const result = await env.DB.prepare(
+		`SELECT id, name, email, phone, attending, plus_one, message, created_at
+		FROM rsvps
+		ORDER BY created_at DESC, id DESC`,
+	).all<RsvpRow>();
+	rsvps = result.results ?? [];
+}
+
+const yesCount = rsvps.filter((rsvp) => rsvp.attending === 1).length;
+const noCount = rsvps.length - yesCount;
+const guestCount = rsvps.reduce(
+	(total, rsvp) =>
+		total + (rsvp.attending === 1 ? 1 + Number(rsvp.plus_one) : 0),
+	0,
+);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="robots" content="noindex" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<title>Summervilla Admin</title>
+		<style>
+			@font-face {
+				font-family: "Neue Haas Unica";
+				src:
+					url("/NEUE%20HAAS%20UNICA%20WEBFONTS/neuehaasunicapro-light-webfont.woff2")
+						format("woff2"),
+					url("/NEUE%20HAAS%20UNICA%20WEBFONTS/neuehaasunicapro-light-webfont.woff")
+						format("woff");
+				font-weight: 300;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			@font-face {
+				font-family: "Neue Haas Unica";
+				src:
+					url("/NEUE%20HAAS%20UNICA%20WEBFONTS/neuehaasunicapro-regular-webfont.woff2")
+						format("woff2"),
+					url("/NEUE%20HAAS%20UNICA%20WEBFONTS/neuehaasunicapro-regular-webfont.woff")
+						format("woff");
+				font-weight: 400;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			:root {
+				--paper: #ffffff;
+				--ink: #28241f;
+				--muted: #91887d;
+				--line: rgba(81, 70, 58, 0.18);
+				--line-strong: rgba(81, 70, 58, 0.32);
+				--danger: #8e4f44;
+				--button: #5f564c;
+				--font: "Neue Haas Unica", "Helvetica Neue", Arial, sans-serif;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			html {
+				background: var(--paper);
+				color: var(--ink);
+				font-family: var(--font);
+			}
+
+			body {
+				margin: 0;
+				min-height: 100dvh;
+				background:
+					radial-gradient(
+						ellipse at 50% 0,
+						rgba(81, 70, 58, 0.055),
+						transparent 62%
+					),
+					var(--paper);
+			}
+
+			button,
+			input {
+				font: inherit;
+			}
+
+			.page {
+				width: min(100%, 78rem);
+				margin: 0 auto;
+				padding: clamp(1.5rem, 4vw, 3.5rem);
+			}
+
+			.topbar {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 1rem;
+				margin-bottom: clamp(2rem, 5vw, 4rem);
+			}
+
+			.brand {
+				margin: 0;
+				font-size: clamp(2.35rem, 7vw, 6.5rem);
+				font-weight: 300;
+				line-height: 0.86;
+				letter-spacing: -0.06em;
+			}
+
+			.kicker,
+			.label {
+				color: var(--muted);
+				font-size: 0.64rem;
+				font-weight: 400;
+				letter-spacing: 0.12em;
+				line-height: 1.1;
+				text-transform: uppercase;
+			}
+
+			.actions {
+				display: flex;
+				align-items: center;
+				gap: 0.7rem;
+				flex-wrap: wrap;
+			}
+
+			a,
+			button {
+				color: inherit;
+			}
+
+			.link,
+			.button {
+				border: 0;
+				border-radius: 999px;
+				background: transparent;
+				color: var(--muted);
+				cursor: pointer;
+				font-size: 0.72rem;
+				letter-spacing: 0.08em;
+				line-height: 1;
+				padding: 0.72rem 0.95rem;
+				text-decoration: none;
+				text-transform: uppercase;
+			}
+
+			.button {
+				background: var(--button);
+				color: var(--paper);
+			}
+
+			.button--ghost {
+				background: rgba(81, 70, 58, 0.08);
+				color: var(--ink);
+			}
+
+			.button--danger {
+				background: transparent;
+				color: var(--danger);
+				padding-inline: 0;
+			}
+
+			.login {
+				display: grid;
+				place-items: center;
+				min-height: 58dvh;
+			}
+
+			.login-card {
+				width: min(100%, 25rem);
+				display: grid;
+				gap: 1.25rem;
+				text-align: center;
+			}
+
+			.login-title {
+				margin: 0;
+				font-size: clamp(2.2rem, 8vw, 4.6rem);
+				font-weight: 300;
+				letter-spacing: -0.055em;
+				line-height: 0.92;
+			}
+
+			.form {
+				display: grid;
+				gap: 1rem;
+			}
+
+			.field {
+				display: grid;
+				gap: 0.45rem;
+				text-align: left;
+			}
+
+			input[type="password"] {
+				width: 100%;
+				border: 0;
+				border-bottom: 1px solid var(--line-strong);
+				border-radius: 0;
+				background: transparent;
+				color: var(--ink);
+				font-size: 1rem;
+				padding: 0.55rem 0;
+			}
+
+			input:focus,
+			button:focus-visible,
+			a:focus-visible {
+				outline: none;
+			}
+
+			input:focus {
+				border-bottom-color: var(--ink);
+			}
+
+			.notice {
+				margin: 0 0 1rem;
+				border-top: 1px solid var(--line);
+				border-bottom: 1px solid var(--line);
+				color: var(--muted);
+				font-size: 0.9rem;
+				padding: 0.8rem 0;
+			}
+
+			.notice--error {
+				color: var(--danger);
+			}
+
+			.stats {
+				display: grid;
+				grid-template-columns: repeat(3, minmax(0, 1fr));
+				gap: 1px;
+				background: var(--line);
+				margin-bottom: 2rem;
+			}
+
+			.stat {
+				background: rgba(255, 255, 255, 0.88);
+				padding: 1.1rem;
+			}
+
+			.stat-value {
+				display: block;
+				margin-top: 0.45rem;
+				font-size: clamp(2rem, 5vw, 3.6rem);
+				font-weight: 300;
+				letter-spacing: -0.05em;
+				line-height: 0.9;
+			}
+
+			.table-wrap {
+				overflow-x: auto;
+				border-top: 1px solid var(--line);
+			}
+
+			table {
+				width: 100%;
+				min-width: 56rem;
+				border-collapse: collapse;
+			}
+
+			th,
+			td {
+				border-bottom: 1px solid var(--line);
+				padding: 0.95rem 0.8rem;
+				text-align: left;
+				vertical-align: top;
+			}
+
+			th {
+				color: var(--muted);
+				font-size: 0.62rem;
+				font-weight: 400;
+				letter-spacing: 0.11em;
+				text-transform: uppercase;
+			}
+
+			td {
+				font-size: 0.92rem;
+				line-height: 1.28;
+			}
+
+			.muted {
+				color: var(--muted);
+			}
+
+			.empty {
+				border-top: 1px solid var(--line);
+				color: var(--muted);
+				padding: 2rem 0;
+			}
+
+			@media (max-width: 680px) {
+				.page {
+					padding-inline: 1rem;
+				}
+
+				.topbar {
+					align-items: flex-start;
+					flex-direction: column;
+				}
+
+				.stats {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<main class="page">
+			<header class="topbar">
+				<div>
+					<p class="kicker">Organizer view</p>
+					<h1 class="brand">Summervilla<br />admin</h1>
+				</div>
+
+				<div class="actions">
+					<a class="link" href="/">RSVP page</a>
+					{
+						authed && (
+							<form method="POST">
+								<input type="hidden" name="action" value="logout" />
+								<button class="button button--ghost" type="submit">
+									Sign out
+								</button>
+							</form>
+						)
+					}
+				</div>
+			</header>
+
+			{message && <p class="notice">{message}</p>}
+			{error && <p class="notice notice--error">{error}</p>}
+
+			{
+				!authed ? (
+					<section class="login" aria-labelledby="login-title">
+						<div class="login-card">
+							<div>
+								<p class="kicker">Password protected</p>
+								<h2 class="login-title" id="login-title">
+									RSVP list
+								</h2>
+							</div>
+							<form class="form" method="POST">
+								<input type="hidden" name="action" value="login" />
+								<label class="field">
+									<span class="label">Admin password</span>
+									<input
+										type="password"
+										name="password"
+										required
+										autocomplete="current-password"
+									/>
+								</label>
+								<button class="button" type="submit">Enter</button>
+							</form>
+						</div>
+					</section>
+				) : (
+					<section aria-label="RSVP responses">
+						<div class="stats" aria-label="RSVP summary">
+							<div class="stat">
+								<span class="label">Replies</span>
+								<span class="stat-value">{rsvps.length}</span>
+							</div>
+							<div class="stat">
+								<span class="label">Attending</span>
+								<span class="stat-value">{yesCount}</span>
+							</div>
+							<div class="stat">
+								<span class="label">Headcount</span>
+								<span class="stat-value">{guestCount}</span>
+							</div>
+						</div>
+
+						{rsvps.length === 0 ? (
+							<p class="empty">No RSVPs yet.</p>
+						) : (
+							<div class="table-wrap">
+								<table>
+									<thead>
+										<tr>
+											<th scope="col">Name</th>
+											<th scope="col">Contact</th>
+											<th scope="col">Status</th>
+											<th scope="col">Message</th>
+											<th scope="col">Submitted</th>
+											<th scope="col">Delete</th>
+										</tr>
+									</thead>
+									<tbody>
+										{rsvps.map((rsvp) => (
+											<tr>
+												<td>
+													<strong>{rsvp.name}</strong>
+												</td>
+												<td>
+													{rsvp.email}
+													<br />
+													<span class="muted">{rsvp.phone}</span>
+												</td>
+												<td>
+													{rsvp.attending === 1 ? "Yes" : "No"}
+													{rsvp.plus_one > 0 && (
+														<span class="muted"> +{rsvp.plus_one}</span>
+													)}
+												</td>
+												<td class="muted">{rsvp.message || "—"}</td>
+												<td class="muted">{formatCreatedAt(rsvp.created_at)}</td>
+												<td>
+													<form method="POST">
+														<input type="hidden" name="action" value="delete" />
+														<input type="hidden" name="id" value={rsvp.id} />
+														<button
+															class="button button--danger"
+															type="submit"
+															data-confirm={`Delete RSVP for ${rsvp.name}?`}
+														>
+															Delete
+														</button>
+													</form>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+						)}
+					</section>
+				)
+			}
+		</main>
+
+		<script>
+			for (const button of document.querySelectorAll("[data-confirm]")) {
+				button.addEventListener("click", (event) => {
+					const message = button.getAttribute("data-confirm");
+					if (message && !window.confirm(message)) {
+						event.preventDefault();
+					}
+				});
+			}
+		</script>
+	</body>
+</html>

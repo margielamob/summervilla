@@ -7,5 +7,6 @@ declare namespace App {
 declare namespace Cloudflare {
 	interface Env {
 		RSVP_PASSWORD: string;
+		ADMIN_PASSWORD: string;
 	}
 }

@@ -3,6 +3,66 @@ import app, { type RsvpResult } from "../server/api";
 
 export const prerender = false;
 
+const floatingPhotos = [
+	{
+		src: "/63452BC3-649E-4502-802D-3567FB557411.jpeg",
+		width: 772,
+		height: 1158,
+		alt: "Summervilla photo 1",
+	},
+	{
+		src: "/650E2217-BA0C-483D-9119-E60C408F9D38.jpeg",
+		width: 1182,
+		height: 1476,
+		alt: "Summervilla photo 2",
+	},
+	{
+		src: "/684A1E29-8B96-47AC-BC4F-5F3DC2B94C09.jpeg",
+		width: 1200,
+		height: 1765,
+		alt: "Summervilla photo 3",
+	},
+	{
+		src: "/849A2C0E-BD32-48E2-BB1E-301C2DAFAA46.jpeg",
+		width: 1170,
+		height: 1100,
+		alt: "Summervilla photo 4",
+	},
+	{
+		src: "/E5C1BF6E-10AB-40BC-B395-D5879475E077.jpeg",
+		width: 854,
+		height: 1200,
+		alt: "Summervilla photo 5",
+	},
+	{
+		src: "/ED5459DA-B09E-41E7-A628-5E4CF0C9F754.jpeg",
+		width: 736,
+		height: 937,
+		alt: "Summervilla photo 6",
+	},
+];
+
+const frontPhotos = {
+	party: {
+		src: "/ED5459DA-B09E-41E7-A628-5E4CF0C9F754.jpeg",
+		width: 736,
+		height: 937,
+		alt: "",
+	},
+	day: {
+		src: "/E5C1BF6E-10AB-40BC-B395-D5879475E077.jpeg",
+		width: 854,
+		height: 1200,
+		alt: "",
+	},
+	lounge: {
+		src: "/684A1E29-8B96-47AC-BC4F-5F3DC2B94C09.jpeg",
+		width: 1200,
+		height: 1765,
+		alt: "",
+	},
+};
+
 let result: RsvpResult | null = null;
 let submitted: Record<string, string> = {};
 
@@ -37,7 +97,7 @@ const passwordError = result && !result.ok && result.error === "password";
 const duplicateError = result && !result.ok && result.error === "duplicate";
 const serverError = result && !result.ok && result.error === "server";
 const success = result?.ok === true;
-const startFlipped = result !== null;
+const cardFlipped = result !== null;
 ---
 
 <!doctype html>
@@ -48,239 +108,421 @@ const startFlipped = result !== null;
 		<meta name="generator" content={Astro.generator} />
 		<meta name="robots" content="noindex" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<title>Summervilla</title>
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link
-			rel="preconnect"
-			href="https://fonts.gstatic.com"
-			crossorigin
-		/>
-		<link
-			rel="stylesheet"
-			href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Caveat:wght@500&display=swap"
-		/>
+		<title>Summervilla RSVP</title>
 		<style>
+			@font-face {
+				font-family: "Neue Haas Unica";
+				src:
+					url("/NEUE%20HAAS%20UNICA%20WEBFONTS/neuehaasunicapro-light-webfont.woff2")
+						format("woff2"),
+					url("/NEUE%20HAAS%20UNICA%20WEBFONTS/neuehaasunicapro-light-webfont.woff")
+						format("woff");
+				font-weight: 300;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			@font-face {
+				font-family: "Neue Haas Unica";
+				src:
+					url("/NEUE%20HAAS%20UNICA%20WEBFONTS/neuehaasunicapro-regular-webfont.woff2")
+						format("woff2"),
+					url("/NEUE%20HAAS%20UNICA%20WEBFONTS/neuehaasunicapro-regular-webfont.woff")
+						format("woff");
+				font-weight: 400;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			@font-face {
+				font-family: "Neue Haas Unica";
+				src:
+					url("/NEUE%20HAAS%20UNICA%20WEBFONTS/neuehaasunicapro-regular-webfont.woff2")
+						format("woff2"),
+					url("/NEUE%20HAAS%20UNICA%20WEBFONTS/neuehaasunicapro-regular-webfont.woff")
+						format("woff");
+				font-weight: 600;
+				font-style: normal;
+				font-display: swap;
+			}
+
 			:root {
 				--paper: #ffffff;
-				--ink: #000000;
-				--muted: #6b6b6b;
-				--rule: rgba(0, 0, 0, 0.28);
-				--soft: #f3f3f3;
+				--ink: #28241f;
+				--muted: #8f867b;
+				--line: rgba(81, 70, 58, 0.24);
+				--line-active: rgba(81, 70, 58, 0.46);
+				--surface: #ffffff;
+				--button: #5f564c;
+				--shadow: 0 28px 80px rgba(67, 58, 49, 0.13);
+				--font-sans: "Neue Haas Unica", "Helvetica Neue", Arial, sans-serif;
 			}
 
 			* {
 				box-sizing: border-box;
 			}
 
-			html,
-			body {
-				margin: 0;
-				padding: 0;
+			html {
+				background: var(--paper);
+				color: var(--ink);
+				font-family: var(--font-sans);
+				text-rendering: geometricPrecision;
 			}
 
 			body {
+				margin: 0;
 				min-height: 100dvh;
-				background:
-					radial-gradient(
-						ellipse at top right,
-						rgba(0, 0, 0, 0.04),
-						transparent 55%
-					),
-					radial-gradient(
-						ellipse at bottom left,
-						rgba(0, 0, 0, 0.03),
-						transparent 55%
-					),
-					var(--paper);
+				background: var(--paper);
 				color: var(--ink);
-				font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
-				display: grid;
-				place-items: center;
-				padding: 3rem 1rem;
 				overflow-x: hidden;
 			}
 
-			.stage {
-				position: relative;
-				width: 100%;
-				max-width: 560px;
-				perspective: 2200px;
+			button,
+			input,
+			textarea {
+				font: inherit;
 			}
 
-			.card {
+			button {
+				color: inherit;
+			}
+
+			.sr-only {
+				position: absolute;
+				width: 1px;
+				height: 1px;
+				padding: 0;
+				margin: -1px;
+				overflow: hidden;
+				clip: rect(0, 0, 0, 0);
+				white-space: nowrap;
+				border: 0;
+			}
+
+			.scene {
+				position: relative;
+				min-height: 100svh;
+				display: grid;
+				place-items: center;
+				padding: clamp(2rem, 5vw, 4rem) 1rem;
+				overflow: hidden;
+				isolation: isolate;
+			}
+
+			.scene::before {
+				content: "";
+				position: absolute;
+				inset: 10% 15%;
+				z-index: 0;
+				background: radial-gradient(
+					ellipse at center,
+					rgba(83, 73, 62, 0.055),
+					transparent 68%
+				);
+				filter: blur(35px);
+				opacity: 0.55;
+			}
+
+			.float-tile {
+				position: absolute;
+				z-index: 1;
+				margin: 0;
+				border-radius: clamp(1.1rem, 2vw, 1.9rem);
+				overflow: hidden;
+				background: var(--paper);
+				box-shadow: 0 18px 55px rgba(67, 58, 49, 0.08);
+				opacity: 0.76;
+			}
+
+			.float-tile img {
+				display: block;
+				width: 100%;
+				height: auto;
+				filter: saturate(0.9) contrast(0.96);
+			}
+
+			.tile-1 {
+				top: -4rem;
+				left: -2rem;
+				width: clamp(9rem, 14vw, 15rem);
+				opacity: 0.32;
+			}
+
+			.tile-2 {
+				top: 6vh;
+				left: 27vw;
+				width: clamp(6.2rem, 8.5vw, 9.5rem);
+				opacity: 0.5;
+			}
+
+			.tile-3 {
+				top: 14vh;
+				right: 6vw;
+				width: clamp(7rem, 10vw, 12rem);
+				opacity: 0.56;
+			}
+
+			.tile-4 {
+				left: 4vw;
+				bottom: 7vh;
+				width: clamp(8rem, 13vw, 14rem);
+				opacity: 0.42;
+			}
+
+			.tile-5 {
+				right: -1.5rem;
+				bottom: 11vh;
+				width: clamp(9rem, 14vw, 16rem);
+				opacity: 0.62;
+			}
+
+			.tile-6 {
+				left: 16vw;
+				top: 66vh;
+				width: clamp(7rem, 10vw, 11rem);
+				opacity: 0.54;
+			}
+
+			.card-shell {
+				position: relative;
+				z-index: 2;
+				width: min(82vw, 960px);
+				display: grid;
+				justify-items: center;
+			}
+
+			.flip-card {
 				position: relative;
 				width: 100%;
-				aspect-ratio: 4 / 5;
+				aspect-ratio: 1672 / 941;
+				perspective: 1800px;
+				filter: drop-shadow(var(--shadow));
+			}
+
+			.flip-inner {
+				position: absolute;
+				inset: 0;
 				transform-style: preserve-3d;
-				transition: transform 1.05s cubic-bezier(0.22, 0.61, 0.36, 1);
-				cursor: pointer;
+				transition: transform 750ms cubic-bezier(0.22, 0.61, 0.36, 1);
 			}
 
-			.card.flipped {
+			.flip-card.is-flipped .flip-inner {
 				transform: rotateY(180deg);
 			}
 
-			.card.flipped .face--front {
-				pointer-events: none;
-			}
-
-			.face {
+			.card-face {
 				position: absolute;
 				inset: 0;
+				width: 100%;
+				height: 100%;
+				margin: 0;
+				padding: 0;
+				border: 0;
+				border-radius: clamp(1rem, 2vw, 1.5rem);
+				background: var(--paper);
+				color: var(--ink);
 				backface-visibility: hidden;
 				-webkit-backface-visibility: hidden;
-				border-radius: 4px;
-				box-shadow:
-					0 30px 60px -20px rgba(0, 0, 0, 0.4),
-					0 0 0 1px rgba(0, 0, 0, 0.08) inset;
 				overflow: hidden;
 			}
 
-			.face--front {
-				appearance: none;
-				border: 0;
-				padding: 0;
-				margin: 0;
-				width: 100%;
-				height: 100%;
-				color: inherit;
-				font: inherit;
+			.card-face--front {
 				cursor: pointer;
-				background:
-					linear-gradient(
-						180deg,
-						rgba(0, 0, 0, 0) 60%,
-						rgba(0, 0, 0, 0.2) 100%
-					),
-					url("/postcard.jpg") center / cover no-repeat,
-					url("/postcard-fallback.svg") center / cover no-repeat,
-					linear-gradient(180deg, #d8d8d8 0%, #777 55%, #2a2a2a 100%);
-			}
-
-			.front-hint {
-				position: absolute;
-				bottom: 1.25rem;
-				left: 50%;
-				transform: translateX(-50%);
-				font-family: "Caveat", "Cormorant Garamond", cursive;
-				font-size: 1.25rem;
-				color: var(--ink);
-				background: rgba(255, 255, 255, 0.94);
-				padding: 0.25rem 0.875rem;
-				border-radius: 999px;
-				letter-spacing: 0.02em;
-				pointer-events: none;
-				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-			}
-
-			.face--back {
-				background: var(--paper);
-				background-image: repeating-linear-gradient(
-					transparent,
-					transparent 26px,
-					rgba(0, 0, 0, 0.1) 26px,
-					rgba(0, 0, 0, 0.1) 27px
-				);
-				transform: rotateY(180deg);
-				padding: 1.75rem 1.5rem 1.5rem;
-				display: flex;
-				flex-direction: column;
-			}
-
-			.face--back::before {
-				content: "";
-				position: absolute;
-				top: 1.25rem;
-				bottom: 1.25rem;
-				left: 50%;
-				width: 1px;
-				background: var(--rule);
-				transform: translateX(-50%);
-				opacity: 0.35;
-				display: none;
-			}
-
-			.stamp {
-				position: absolute;
-				top: 1.25rem;
-				right: 1.25rem;
-				width: 5rem;
-				height: 6rem;
-				padding: 0.375rem;
-				background: var(--paper);
-				border: 1px dashed rgba(0, 0, 0, 0.4);
-				transform: rotate(4deg);
 				display: grid;
-				place-items: center;
-				z-index: 2;
+				grid-template-columns: minmax(12rem, 0.86fr) minmax(0, 1.34fr);
+				gap: clamp(0.85rem, 1.9vw, 1.35rem);
+				padding: clamp(0.9rem, 2vw, 1.45rem);
+				appearance: none;
+				background: #ffffff;
+				text-align: left;
 			}
 
-			.stamp-inner {
+			.card-face--front img {
+				display: block;
 				width: 100%;
 				height: 100%;
-				border: 1px solid var(--ink);
-				color: var(--ink);
-				display: grid;
-				place-items: center;
-				font-family: "Cormorant Garamond", serif;
-				font-style: italic;
-				font-size: 0.75rem;
-				letter-spacing: 0.18em;
-				text-align: center;
-				line-height: 1.2;
+				object-fit: cover;
 			}
 
-			.stamp-inner strong {
-				display: block;
-				font-style: normal;
+			.front-copy {
+				position: relative;
+				z-index: 1;
+				display: grid;
+				align-content: space-between;
+				gap: 1rem;
+				min-width: 0;
+				padding: clamp(0.15rem, 0.8vw, 0.45rem) 0;
+			}
+
+			.front-kicker,
+			.front-meta,
+			.front-note {
+				color: var(--muted);
+				font-size: clamp(0.58rem, 0.8vw, 0.72rem);
 				font-weight: 600;
-				font-size: 1.5rem;
-				letter-spacing: 0.08em;
-				margin-bottom: 0.125rem;
-			}
-
-			.back-header {
-				margin: 0 6rem 1rem 0;
-			}
-
-			.back-title {
-				font-family: "Cormorant Garamond", serif;
-				font-style: italic;
-				font-weight: 500;
-				font-size: 2.25rem;
-				line-height: 1;
-				margin: 0;
-				letter-spacing: 0.01em;
-			}
-
-			.back-subtitle {
-				font-family: "Cormorant Garamond", serif;
-				font-style: italic;
-				font-size: 0.95rem;
-				color: var(--muted);
-				margin: 0.25rem 0 0;
-			}
-
-			form {
-				display: grid;
-				gap: 0.625rem;
-				flex: 1;
-			}
-
-			.row {
-				display: grid;
-				grid-template-columns: 1fr 1fr;
-				gap: 0.875rem;
-			}
-
-			label {
-				display: grid;
-				gap: 0.125rem;
-				font-size: 0.625rem;
-				letter-spacing: 0.18em;
+				line-height: 1.15;
+				letter-spacing: 0.12em;
 				text-transform: uppercase;
+			}
+
+			.front-title {
+				margin: 0;
+				color: #2e2923;
+				font-size: clamp(3rem, 7.7vw, 6.55rem);
+				font-weight: 300;
+				line-height: 0.82;
+				letter-spacing: -0.055em;
+			}
+
+			.front-meta {
+				display: grid;
+				gap: 0.38rem;
+				letter-spacing: 0.1em;
+			}
+
+			.front-note {
+				border-top: 1px solid var(--line);
+				padding-top: 0.62rem;
+				letter-spacing: 0.08em;
+			}
+
+			.front-media {
+				display: grid;
+				grid-template-columns: 0.7fr 1fr;
+				grid-template-rows: 1fr 0.78fr;
+				gap: clamp(0.45rem, 0.9vw, 0.72rem);
+				min-width: 0;
+				min-height: 0;
+			}
+
+			.front-photo {
+				position: relative;
+				min-width: 0;
+				min-height: 0;
+				margin: 0;
+				overflow: hidden;
+				border-radius: clamp(0.65rem, 1.3vw, 1rem);
+				background: #f3f1ee;
+			}
+
+			.front-photo img {
+				filter: saturate(0.92) contrast(0.96);
+			}
+
+			.front-photo--main {
+				grid-column: 2;
+				grid-row: 1 / 3;
+			}
+
+			.front-photo--main img {
+				object-position: 50% 45%;
+			}
+
+			.front-photo--day {
+				grid-column: 1;
+				grid-row: 1;
+			}
+
+			.front-photo--day img {
+				object-position: 54% 42%;
+			}
+
+			.front-photo--lounge {
+				grid-column: 1;
+				grid-row: 2;
+			}
+
+			.front-photo--lounge img {
+				object-position: 48% 56%;
+			}
+
+			.card-face--back {
+				background: var(--surface);
+				box-shadow: inset 0 0 0 1px rgba(81, 70, 58, 0.055);
+				transform: rotateY(180deg);
+				overflow: auto;
+				padding: clamp(1.1rem, 2.15vw, 1.8rem);
+				cursor: pointer;
+			}
+
+			.rsvp-form,
+			.rsvp-form *,
+			button[type="submit"] {
+				cursor: auto;
+			}
+
+			.reply {
+				display: grid;
+				grid-template-columns: minmax(0, 30rem);
+				gap: clamp(1.15rem, 2.4vw, 1.75rem);
+				align-content: center;
+				justify-content: center;
+				min-height: 100%;
+				text-align: center;
+			}
+
+			.reply-title {
+				margin: 0;
+				font-size: clamp(2.1rem, 4.4vw, 4rem);
+				font-weight: 300;
+				line-height: 0.9;
+				letter-spacing: -0.035em;
+				color: #39342e;
+			}
+
+			.reply-copy {
+				max-width: 14rem;
+				margin: 0.95rem auto 0;
 				color: var(--muted);
+				font-size: 0.86rem;
 				font-weight: 500;
+				line-height: 1.25;
+				letter-spacing: 0;
+			}
+
+			button[type="submit"]:hover {
+				background: #4d463e;
+				color: var(--paper);
+			}
+
+			.rsvp-form,
+			.fields {
+				display: grid;
+			}
+
+			.rsvp-form {
+				gap: 0.8rem;
+				justify-items: center;
+			}
+
+			.fields {
+				width: min(100%, 28rem);
+				grid-template-columns: 1fr;
+				gap: 0.86rem clamp(1rem, 2vw, 1.55rem);
+				text-align: left;
+			}
+
+			.field {
+				display: grid;
+				gap: 0.25rem;
+				margin: 0;
+				min-width: 0;
+			}
+
+			.field--wide,
+			.alert,
+			.submit-row {
+				grid-column: 1 / -1;
+			}
+
+			label,
+			legend {
+				color: var(--muted);
+				font-size: 0.58rem;
+				font-weight: 650;
+				line-height: 1;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
 			}
 
 			input[type="text"],
@@ -289,394 +531,501 @@ const startFlipped = result !== null;
 			input[type="number"],
 			input[type="password"],
 			textarea {
-				font: inherit;
-				font-family: "Cormorant Garamond", ui-serif, serif;
-				font-size: 1.0625rem;
-				padding: 0.125rem 0 0.1875rem;
-				background: transparent;
-				border: 0;
-				border-bottom: 1px solid var(--rule);
-				color: var(--ink);
 				width: 100%;
+				border: 0;
+				border-bottom: 1px solid var(--line);
+				border-radius: 0;
+				background: transparent;
+				color: var(--ink);
+				padding: 0.2rem 0 0.4rem;
+				font-size: clamp(0.95rem, 1.25vw, 1.05rem);
+				font-weight: 450;
+				line-height: 1.25;
+				letter-spacing: 0;
+				appearance: none;
+				transition:
+					border-color 160ms ease,
+					background-color 160ms ease,
+					color 160ms ease;
+			}
+
+			input:focus,
+			textarea:focus,
+			button[type="submit"]:focus-visible,
+			.card-face--front:focus-visible {
+				outline: none;
 			}
 
 			input:focus,
 			textarea:focus {
-				outline: none;
-				border-bottom-color: var(--ink);
-				border-bottom-width: 1.5px;
+				border-bottom-color: var(--line-active);
+				background: rgba(112, 97, 81, 0.025);
 			}
 
 			textarea {
-				resize: none;
-				min-height: 2rem;
-				line-height: 1.35;
+				min-height: 3.8rem;
+				resize: vertical;
+			}
+
+			fieldset {
+				border: 0;
+				padding: 0;
 			}
 
 			.radios {
 				display: flex;
-				gap: 1rem;
-				padding: 0.125rem 0 0.1875rem;
-				font-family: "Cormorant Garamond", serif;
-				font-style: italic;
-				font-size: 1.0625rem;
-				border-bottom: 1px solid var(--rule);
+				flex-wrap: wrap;
+				gap: 0.5rem 1.05rem;
+				min-height: 1.9rem;
+				align-items: center;
+				border-bottom: 1px solid var(--line);
+				transition: border-color 160ms ease;
 			}
 
-			.radios > label {
-				flex-direction: row;
+			.radios:focus-within {
+				border-bottom-color: var(--line-active);
+			}
+
+			.radio {
+				display: inline-flex;
 				align-items: center;
-				gap: 0.375rem;
-				font-size: 1.0625rem;
+				gap: 0.45rem;
+				color: #3f3932;
+				font-size: clamp(0.95rem, 1.25vw, 1.05rem);
+				font-weight: 500;
+				line-height: 1.1;
 				text-transform: none;
 				letter-spacing: 0;
-				color: var(--ink);
-				font-weight: 400;
 			}
 
-			.radios input[type="radio"] {
-				accent-color: var(--ink);
-			}
-
-			button[type="submit"] {
-				margin-top: auto;
-				font-family: "Cormorant Garamond", serif;
-				font-style: italic;
-				font-size: 1.0625rem;
-				letter-spacing: 0.04em;
-				padding: 0.5rem 1.25rem;
-				background: var(--ink);
-				color: var(--paper);
-				border: 1px solid var(--ink);
-				border-radius: 2px;
-				cursor: pointer;
-				align-self: start;
+			.radio input {
+				width: 0.86rem;
+				height: 0.86rem;
+				margin: 0;
+				border: 1px solid rgba(81, 70, 58, 0.35);
+				border-radius: 999px;
+				background: transparent;
+				appearance: none;
+				box-shadow: inset 0 0 0 3px var(--surface);
 				transition:
-					background 0.2s ease,
-					color 0.2s ease;
+					background-color 150ms ease,
+					border-color 150ms ease;
 			}
 
-			button[type="submit"]:hover {
-				background: var(--paper);
-				color: var(--ink);
+			.radio input:checked {
+				border-color: rgba(81, 70, 58, 0.42);
+				background: #81766b;
 			}
 
-			.error {
-				color: var(--ink);
-				font-size: 0.6875rem;
-				margin: 0.125rem 0 0;
-				letter-spacing: 0.02em;
-				font-style: italic;
-				text-transform: none;
+			.radio input:focus,
+			.radio input:focus-visible {
+				outline: none;
 			}
 
 			.alert {
-				font-family: "Cormorant Garamond", serif;
-				font-style: italic;
-				font-size: 0.9rem;
-				color: var(--ink);
-				border-left: 3px solid var(--ink);
-				padding: 0.125rem 0 0.125rem 0.625rem;
 				margin: 0;
+				padding: 0.65rem 0;
+				border-top: 1px solid rgba(130, 88, 68, 0.22);
+				border-bottom: 1px solid rgba(130, 88, 68, 0.22);
+				color: #7b5443;
+				font-size: 0.9rem;
+				font-weight: 550;
+				line-height: 1.25;
+			}
+
+			.error {
+				margin: 0.05rem 0 0;
+				color: var(--muted);
+				font-size: 0.72rem;
 				font-weight: 500;
+				line-height: 1.25;
+			}
+
+			.submit-row {
+				display: grid;
+				justify-items: center;
+				margin-top: 0.1rem;
+			}
+
+			button[type="submit"] {
+				min-height: 2.25rem;
+				border: 0;
+				border-radius: 999px;
+				background: var(--button);
+				color: var(--paper);
+				padding: 0.58rem 1rem 0.62rem;
+				font-size: 0.72rem;
+				font-weight: 650;
+				line-height: 1;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				cursor: pointer;
+				transition:
+					background-color 160ms ease,
+					color 160ms ease,
+					transform 160ms ease;
+			}
+
+			button[type="submit"]:active {
+				transform: translateY(1px);
 			}
 
 			.success {
 				display: grid;
-				place-items: center;
-				flex: 1;
-				text-align: center;
-				gap: 0.5rem;
-				padding: 1rem 0;
+				gap: 0.7rem;
+				border-top: 1px solid var(--line);
+				border-bottom: 1px solid var(--line);
+				padding: 1.1rem 0 1.2rem;
 			}
 
 			.success-title {
-				font-family: "Caveat", "Cormorant Garamond", cursive;
-				font-size: 3rem;
-				color: var(--ink);
 				margin: 0;
-				line-height: 1;
+				font-size: clamp(2rem, 4vw, 3.65rem);
+				font-weight: 300;
+				line-height: 0.9;
+				letter-spacing: -0.035em;
 			}
 
 			.success-sub {
-				font-family: "Cormorant Garamond", serif;
-				font-style: italic;
-				font-size: 1.0625rem;
-				color: var(--muted);
+				max-width: 25rem;
 				margin: 0;
-				max-width: 22rem;
-				line-height: 1.4;
+				color: var(--muted);
+				font-size: clamp(0.9rem, 1.25vw, 1.02rem);
+				font-weight: 500;
+				line-height: 1.25;
 			}
 
-			/* Moodboard — floating polaroids */
-			.moodboard {
-				position: absolute;
-				pointer-events: none;
-				background: var(--paper);
-				padding: 0.5rem 0.5rem 1.75rem;
-				box-shadow: 0 18px 36px -10px rgba(0, 0, 0, 0.35);
-				display: flex;
-				flex-direction: column;
-			}
+			@media (max-width: 820px) {
+				.scene {
+					padding: 1.4rem 0.65rem;
+				}
 
-			.moodboard::before {
-				content: "";
-				flex: 1;
-				background-color: var(--soft);
-				background-position: center;
-				background-size: cover;
-				background-repeat: no-repeat;
-				filter: grayscale(1);
-			}
+				.float-tile {
+					opacity: 0.36;
+				}
 
-			.moodboard::after {
-				content: "";
-				position: absolute;
-				top: -0.3rem;
-				left: 50%;
-				transform: translateX(-50%) rotate(-2deg);
-				width: 2.25rem;
-				height: 0.625rem;
-				background: rgba(255, 255, 255, 0.75);
-				border: 1px solid rgba(0, 0, 0, 0.18);
-			}
-
-			.mb-1 {
-				top: -8%;
-				right: -32%;
-				width: 190px;
-				height: 240px;
-				transform: rotate(-7deg);
-			}
-			.mb-1::before {
-				background-image: url("/moodboard-1.jpg");
-			}
-
-			.mb-2 {
-				bottom: -10%;
-				left: -34%;
-				width: 210px;
-				height: 270px;
-				transform: rotate(6deg);
-			}
-			.mb-2::before {
-				background-image: url("/moodboard-2.jpg");
-			}
-
-			.mb-3 {
-				top: 42%;
-				right: -38%;
-				width: 175px;
-				height: 220px;
-				transform: rotate(12deg);
-			}
-			.mb-3::before {
-				background-image: url("/moodboard-3.jpg");
-			}
-
-			@media (max-width: 960px) {
-				.moodboard {
+				.tile-2,
+				.tile-6 {
 					display: none;
 				}
+
+				.card-shell {
+					width: min(92vw, 680px);
+				}
 			}
 
-			@media (max-width: 480px) {
-				body {
-					padding: 1.5rem 1rem;
+			@media (max-width: 560px) {
+				.scene {
+					min-height: 100dvh;
+					place-items: start center;
+					padding-top: 18vh;
 				}
-				.stage {
-					max-width: 100%;
+
+				.card-shell {
+					width: min(94vw, 440px);
 				}
-				.card {
-					aspect-ratio: 3 / 4;
+
+				.flip-card {
+					aspect-ratio: 1672 / 941;
 				}
-				.face--back {
-					padding: 1.25rem 1rem 1.1rem;
+
+				.card-face--front {
+					grid-template-columns: 0.47fr 0.53fr;
+					gap: 0.5rem;
+					padding: 0.62rem;
 				}
-				.stamp {
-					width: 4rem;
-					height: 4.75rem;
-					top: 1rem;
-					right: 1rem;
+
+				.front-copy {
+					gap: 0.45rem;
 				}
-				.back-header {
-					margin-right: 4.5rem;
+
+				.front-kicker,
+				.front-meta,
+				.front-note {
+					font-size: 0.47rem;
+					letter-spacing: 0.08em;
 				}
-				.back-title {
-					font-size: 1.875rem;
+
+				.front-title {
+					font-size: clamp(2.05rem, 10vw, 2.7rem);
 				}
-				.success-title {
-					font-size: 2.5rem;
+
+				.front-note {
+					display: none;
+				}
+
+				.front-media {
+					grid-template-columns: 0.58fr 1fr;
+					grid-template-rows: 1fr;
+					gap: 0.38rem;
+				}
+
+				.front-photo--day {
+					grid-column: 1;
+					grid-row: 1;
+				}
+
+				.front-photo--main {
+					grid-column: 2;
+					grid-row: 1;
+				}
+
+				.front-photo--lounge {
+					display: none;
+				}
+
+				.flip-card.is-flipped {
+					aspect-ratio: auto;
+					height: min(76vh, 34rem);
+				}
+
+				.reply {
+					grid-template-columns: 1fr;
+				}
+
+				.reply-copy {
+					display: none;
+				}
+
+				.fields {
+					grid-template-columns: 1fr;
+				}
+
+				.tile-1 {
+					top: -2rem;
+					left: -3rem;
+				}
+
+				.tile-3 {
+					top: 2rem;
+					right: -2rem;
+				}
+
+				.tile-4 {
+					left: -3rem;
+					bottom: 3rem;
+				}
+
+				.tile-5 {
+					right: -3rem;
+					bottom: 1rem;
 				}
 			}
 		</style>
 	</head>
 
 	<body>
-		<div class="stage">
-			<div class="moodboard mb-1" aria-hidden="true"></div>
-			<div class="moodboard mb-2" aria-hidden="true"></div>
-			<div class="moodboard mb-3" aria-hidden="true"></div>
+		<main class="scene">
+			<h1 class="sr-only">Summervilla RSVP</h1>
 
-			<div
-				class:list={["card", { flipped: startFlipped }]}
-				id="card"
-			>
-				<button
-					type="button"
-					class="face face--front"
-					id="flip-trigger"
-					aria-label="Open RSVP"
+			{
+				floatingPhotos.map((photo, index) => (
+					<figure class:list={["float-tile", `tile-${index + 1}`]}>
+						<img
+							src={photo.src}
+							width={photo.width}
+							height={photo.height}
+							alt=""
+							loading={index < 3 ? "eager" : "lazy"}
+							decoding="async"
+						/>
+					</figure>
+				))
+			}
+
+			<section class="card-shell" aria-label="Summervilla RSVP card">
+				<div
+					class:list={["flip-card", { "is-flipped": cardFlipped }]}
+					id="rsvp-card"
 				>
-					<span class="front-hint">tap to reply</span>
-				</button>
-
-				<div class="face face--back">
-					<div class="stamp" aria-hidden="true">
-						<div class="stamp-inner">
-							<strong>RSVP</strong>
-							Poste<br />Italiane
-						</div>
-					</div>
-
-					{success ? (
-						<div class="success">
-							<p class="success-title">Ciao Bella.</p>
-							<p class="success-sub">
-								your reply is on its way.<br />see you in Summervilla.
-							</p>
-						</div>
-					) : (
-						<>
-							<div class="back-header">
-								<h1 class="back-title">RSVP</h1>
-								<p class="back-subtitle">a reply for Summervilla</p>
+					<div class="flip-inner">
+						<button
+							type="button"
+							class="card-face card-face--front"
+							id="flip-open"
+							aria-label="Open RSVP form"
+						>
+							<div class="front-copy" aria-hidden="true">
+								<div class="front-kicker">Private summer list</div>
+								<div>
+									<p class="front-title">Summer<br />villa</p>
+								</div>
+								<div class="front-meta">
+									<span>RSVP</span>
+									<span>After sun / late night</span>
+								</div>
+								<div class="front-note">Guests only</div>
 							</div>
+							<div class="front-media" aria-hidden="true">
+								<figure class="front-photo front-photo--day">
+									<img
+										src={frontPhotos.day.src}
+										width={frontPhotos.day.width}
+										height={frontPhotos.day.height}
+										alt={frontPhotos.day.alt}
+										loading="eager"
+										decoding="async"
+									/>
+								</figure>
+								<figure class="front-photo front-photo--lounge">
+									<img
+										src={frontPhotos.lounge.src}
+										width={frontPhotos.lounge.width}
+										height={frontPhotos.lounge.height}
+										alt={frontPhotos.lounge.alt}
+										loading="eager"
+										decoding="async"
+									/>
+								</figure>
+								<figure class="front-photo front-photo--main">
+									<img
+										src={frontPhotos.party.src}
+										width={frontPhotos.party.width}
+										height={frontPhotos.party.height}
+										alt={frontPhotos.party.alt}
+										loading="eager"
+										decoding="async"
+									/>
+								</figure>
+							</div>
+						</button>
 
-							<form method="POST" novalidate>
-								{passwordError && (
-									<p class="alert">Wrong password. Try again.</p>
-								)}
-								{duplicateError && (
-									<p class="alert">That email has already RSVP'd.</p>
-								)}
-								{serverError && (
-									<p class="alert">Something went wrong. Please try again.</p>
-								)}
-
-								<div class="row">
-									<label>
-										Name
-										<input
-											type="text"
-											name="name"
-											required
-											maxlength="120"
-											autocomplete="name"
-											value={submitted.name ?? ""}
-										/>
-										{fieldErrors.name && <p class="error">{fieldErrors.name}</p>}
-									</label>
-									<label>
-										Phone
-										<input
-											type="tel"
-											name="phone"
-											required
-											maxlength="40"
-											autocomplete="tel"
-											value={submitted.phone ?? ""}
-										/>
-										{fieldErrors.phone && (
-											<p class="error">{fieldErrors.phone}</p>
-										)}
-									</label>
+						<div class="card-face card-face--back">
+							<section class="reply" aria-labelledby="reply-title">
+								<div>
+									<h2 class="reply-title" id="reply-title">RSVP</h2>
+									<p class="reply-copy">A reply for Summervilla.</p>
 								</div>
 
-								<label>
-									Email
-									<input
-										type="email"
-										name="email"
-										required
-										maxlength="200"
-										autocomplete="email"
-										value={submitted.email ?? ""}
-									/>
-									{fieldErrors.email && <p class="error">{fieldErrors.email}</p>}
-								</label>
-
-								<div class="row">
-									<label>
-										Attending
-										<div class="radios">
-											<label>
-												<input
-													type="radio"
-													name="attending"
-													value="yes"
-													required
-													checked={submitted.attending !== "no"}
-												/>
-												Yes
-											</label>
-											<label>
-												<input
-													type="radio"
-													name="attending"
-													value="no"
-													checked={submitted.attending === "no"}
-												/>
-												No
-											</label>
-										</div>
-									</label>
-									<label>
-										+1 (0–5)
+								{success ? (
+									<div class="success" role="status">
+										<p class="success-title">Ciao Bella.</p>
+										<p class="success-sub">
+											Your reply is on its way. See you in Summervilla.
+										</p>
+									</div>
+								) : (
+									<form class="rsvp-form" method="POST" novalidate>
 										<input
-											type="number"
+											type="hidden"
+											name="attending"
+											value={submitted.attending ?? "yes"}
+										/>
+										<input
+											type="hidden"
 											name="plus_one"
-											min="0"
-											max="5"
 											value={submitted.plus_one ?? "0"}
 										/>
-									</label>
-								</div>
+										<div class="fields">
+											{passwordError && (
+												<p class="alert">Wrong password. Try again.</p>
+											)}
+											{duplicateError && (
+												<p class="alert">That email has already RSVP'd.</p>
+											)}
+											{serverError && (
+												<p class="alert">Something went wrong. Please try again.</p>
+											)}
 
-								<label>
-									Message
-									<textarea name="message" maxlength="2000" rows="2"
-										>{submitted.message ?? ""}</textarea
-									>
-								</label>
+											<label class="field">
+												Name
+												<input
+													type="text"
+													name="name"
+													required
+													maxlength="120"
+													autocomplete="name"
+													value={submitted.name ?? ""}
+												/>
+												{fieldErrors.name && (
+													<p class="error">{fieldErrors.name}</p>
+												)}
+											</label>
 
-								<label>
-									Password
-									<input
-										type="password"
-										name="password"
-										required
-										autocomplete="off"
-										maxlength="200"
-									/>
-									{fieldErrors.password && (
-										<p class="error">{fieldErrors.password}</p>
-									)}
-								</label>
+											<label class="field">
+												Phone
+												<input
+													type="tel"
+													name="phone"
+													required
+													maxlength="40"
+													autocomplete="tel"
+													value={submitted.phone ?? ""}
+												/>
+												{fieldErrors.phone && (
+													<p class="error">{fieldErrors.phone}</p>
+												)}
+											</label>
 
-								<button type="submit">Send Reply →</button>
-							</form>
-						</>
-					)}
+											<label class="field field--wide">
+												Email
+												<input
+													type="email"
+													name="email"
+													required
+													maxlength="200"
+													autocomplete="email"
+													value={submitted.email ?? ""}
+												/>
+												{fieldErrors.email && (
+													<p class="error">{fieldErrors.email}</p>
+												)}
+											</label>
+
+											<label class="field field--wide">
+												Password
+												<input
+													type="password"
+													name="password"
+													required
+													autocomplete="off"
+													maxlength="200"
+												/>
+												{fieldErrors.password && (
+													<p class="error">{fieldErrors.password}</p>
+												)}
+											</label>
+
+											<div class="submit-row">
+												<button type="submit">Send Reply</button>
+											</div>
+										</div>
+									</form>
+								)}
+							</section>
+						</div>
+					</div>
 				</div>
-			</div>
-		</div>
+
+			</section>
+		</main>
 
 		<script>
-			const card = document.getElementById("card");
-			const trigger = document.getElementById("flip-trigger");
-			trigger?.addEventListener("click", () => {
-				card?.classList.add("flipped");
+			const card = document.getElementById("rsvp-card");
+			const open = document.getElementById("flip-open");
+
+			open?.addEventListener("click", () => {
+				card?.classList.add("is-flipped");
+			});
+
+			card?.addEventListener("click", (event) => {
+				if (!card.classList.contains("is-flipped")) return;
+				const target = event.target;
+
+				if (!(target instanceof Element)) return;
+				if (target.closest("form, input, textarea, button, label, fieldset")) {
+					return;
+				}
+
+				card.classList.remove("is-flipped");
+			});
+
+			document.addEventListener("keydown", (event) => {
+				if (event.key !== "Escape" || !card?.classList.contains("is-flipped")) {
+					return;
+				}
+
+				card.classList.remove("is-flipped");
 			});
 		</script>
 	</body>
