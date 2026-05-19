@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
+import { getRsvpPassword } from "./settings";
 
 type Bindings = Env;
 
@@ -59,7 +60,7 @@ app.post(
 	}),
 	async (c, next) => {
 		const input = c.req.valid("form");
-		const expected = c.env.RSVP_PASSWORD;
+		const expected = await getRsvpPassword(c.env);
 		if (!expected || !constantTimeEqual(input.password, expected)) {
 			return c.json<RsvpResult>({ ok: false, error: "password" }, 401);
 		}

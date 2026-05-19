@@ -1,4 +1,6 @@
 ---
+import { setRsvpPassword } from "../server/settings";
+
 export const prerender = false;
 
 type RsvpRow = {
@@ -122,6 +124,26 @@ if (Astro.request.method === "POST") {
 			} else {
 				await env.DB.prepare("DELETE FROM rsvps WHERE id = ?").bind(id).run();
 				message = `Deleted RSVP #${id}.`;
+			}
+		}
+	} else if (action === "update_rsvp_password") {
+		if (!authed) {
+			error = "Session expired. Sign in again.";
+		} else {
+			const password = String(formData.get("rsvp_password") ?? "").trim();
+			const confirmation = String(
+				formData.get("rsvp_password_confirm") ?? "",
+			).trim();
+
+			if (!password) {
+				error = "Enter a new RSVP password.";
+			} else if (password.length > 200) {
+				error = "RSVP password must be 200 characters or fewer.";
+			} else if (password !== confirmation) {
+				error = "RSVP password confirmation does not match.";
+			} else {
+				await setRsvpPassword(env.DB, password);
+				message = "RSVP password updated.";
 			}
 		}
 	}
@@ -367,6 +389,33 @@ const guestCount = rsvps.reduce(
 				margin-bottom: 2rem;
 			}
 
+			.settings {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) minmax(16rem, 24rem);
+				gap: clamp(1rem, 4vw, 3rem);
+				align-items: start;
+				border-top: 1px solid var(--line);
+				border-bottom: 1px solid var(--line);
+				margin-bottom: 2rem;
+				padding: 1.2rem 0;
+			}
+
+			.settings-title {
+				margin: 0.35rem 0 0;
+				font-size: clamp(1.6rem, 3vw, 2.35rem);
+				font-weight: 300;
+				line-height: 0.95;
+				letter-spacing: -0.035em;
+			}
+
+			.settings-copy {
+				max-width: 24rem;
+				margin: 0.65rem 0 0;
+				color: var(--muted);
+				font-size: 0.92rem;
+				line-height: 1.35;
+			}
+
 			.stat {
 				background: rgba(255, 255, 255, 0.88);
 				padding: 1.1rem;
@@ -436,6 +485,10 @@ const guestCount = rsvps.reduce(
 				.stats {
 					grid-template-columns: 1fr;
 				}
+
+				.settings {
+					grid-template-columns: 1fr;
+				}
 			}
 		</style>
 	</head>
@@ -492,6 +545,46 @@ const guestCount = rsvps.reduce(
 					</section>
 				) : (
 					<section aria-label="RSVP responses">
+						<section class="settings" aria-labelledby="rsvp-password-title">
+							<div>
+								<p class="kicker">Guest access</p>
+								<h2 class="settings-title" id="rsvp-password-title">
+									RSVP password
+								</h2>
+								<p class="settings-copy">
+									Set the password guests use on the public RSVP form.
+								</p>
+							</div>
+							<form class="form" method="POST">
+								<input
+									type="hidden"
+									name="action"
+									value="update_rsvp_password"
+								/>
+								<label class="field">
+									<span class="label">New RSVP password</span>
+									<input
+										type="password"
+										name="rsvp_password"
+										required
+										maxlength="200"
+										autocomplete="new-password"
+									/>
+								</label>
+								<label class="field">
+									<span class="label">Confirm RSVP password</span>
+									<input
+										type="password"
+										name="rsvp_password_confirm"
+										required
+										maxlength="200"
+										autocomplete="new-password"
+									/>
+								</label>
+								<button class="button" type="submit">Update password</button>
+							</form>
+						</section>
+
 						<div class="stats" aria-label="RSVP summary">
 							<div class="stat">
 								<span class="label">Replies</span>
